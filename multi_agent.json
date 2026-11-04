@@ -1,0 +1,747 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## תרגיל 3 – פתרון: קביעת תור במרפאה\n\n**לפני הרצה:**\n1. Search Slot + Create Appt: Credential של Airtable (Personal Access Token), Base **Clinic**, Table **Appointments**\n2. Log: Credential של Google Sheets, Document **booking_log**, Sheet **Log**\n3. ב-Log, שורה 1: timestamp, patient_name, phone, service, date, time, result, http_code, message, airtable_record_id\n\n**חשוב:** ב-Search Slot מופעל Settings › Always Output Data. שם הצומת Normalize חייב להישאר כפי שהוא.\n\n**בדיקה:** ב-Pin data התאריך 2026-11-03. אם הוא כבר עבר, שנו לתאריך עתידי.",
+        "height": 420,
+        "width": 600,
+        "color": 5
+      },
+      "id": "4f063c27-5912-4a9c-a6cc-e6c13e15dafd",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -32,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "book-appointment",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "d8c13924-5e7c-41c6-8067-ad24ce2915e4",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        32,
+        480
+      ],
+      "webhookId": "e3000000-0000-4000-8000-0000000000a1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e3a00001-0000-4000-8000-000000000001",
+              "name": "name",
+              "value": "={{ $json.body.patient.name }}",
+              "type": "string"
+            },
+            {
+              "id": "e3a00001-0000-4000-8000-000000000002",
+              "name": "phone",
+              "value": "={{ $json.body.patient.phone }}",
+              "type": "string"
+            },
+            {
+              "id": "e3a00001-0000-4000-8000-000000000003",
+              "name": "id_number",
+              "value": "={{ $json.body.patient.id_number }}",
+              "type": "string"
+            },
+            {
+              "id": "e3a00001-0000-4000-8000-000000000004",
+              "name": "service",
+              "value": "={{ $json.body.service }}",
+              "type": "string"
+            },
+            {
+              "id": "e3a00001-0000-4000-8000-000000000005",
+              "name": "date",
+              "value": "={{ $json.body.date }}",
+              "type": "string"
+            },
+            {
+              "id": "e3a00001-0000-4000-8000-000000000006",
+              "name": "time",
+              "value": "={{ $json.body.time }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e4534933-72da-4ecb-a7d6-30b5adee9d0f",
+      "name": "Normalize",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        256,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "e3b00001-0000-4000-8000-000000000001",
+              "leftValue": "={{ $json.name }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "e3b00001-0000-4000-8000-000000000002",
+              "leftValue": "={{ $json.phone }}",
+              "rightValue": "05",
+              "operator": {
+                "type": "string",
+                "operation": "startsWith"
+              }
+            },
+            {
+              "id": "e3b00001-0000-4000-8000-000000000003",
+              "leftValue": "={{ $json.time }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "e3b00001-0000-4000-8000-000000000004",
+              "leftValue": "={{ $json.date }}",
+              "rightValue": "={{ $today }}",
+              "operator": {
+                "type": "dateTime",
+                "operation": "after"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "98b92774-4635-4c2b-8a24-eed79f39a41d",
+      "name": "Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        480,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "filterByFormula": "=AND(DATETIME_FORMAT({Date}, 'YYYY-MM-DD') = '{{ $json.date }}', {Time} = '{{ $json.time }}', {Status} = 'Confirmed')",
+        "returnAll": false,
+        "limit": 1,
+        "options": {}
+      },
+      "id": "c5cc6378-31f4-4ee7-a38d-71e0f15f0ad1",
+      "name": "Search Slot",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        720,
+        384
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "DhStpPxv3HwzMxOM",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "e3b00002-0000-4000-8000-000000000001",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notExists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "c25334c7-e272-438a-814b-bf6af8ab31a3",
+      "name": "Slot Free?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        928,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Patient Name": "={{ $('Normalize').item.json.name }}",
+            "Phone": "={{ $('Normalize').item.json.phone }}",
+            "ID Number": "={{ $('Normalize').item.json.id_number }}",
+            "Service": "={{ $('Normalize').item.json.service }}",
+            "Date": "={{ $('Normalize').item.json.date }}",
+            "Time": "={{ $('Normalize').item.json.time }}",
+            "Status": "Confirmed"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Patient Name",
+              "displayName": "Patient Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ID Number",
+              "displayName": "ID Number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Service",
+              "displayName": "Service",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Time",
+              "displayName": "Time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {
+          "typecast": true
+        }
+      },
+      "id": "cc0fa816-f60f-4fa1-b705-53ddf519d935",
+      "name": "Create Appt",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        1152,
+        272
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e3c00001-0000-4000-8000-000000000001",
+              "name": "timestamp",
+              "value": "={{ $now }}",
+              "type": "string"
+            },
+            {
+              "id": "e3c00001-0000-4000-8000-000000000002",
+              "name": "patient_name",
+              "value": "={{ $('Normalize').item.json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "e3c00001-0000-4000-8000-000000000003",
+              "name": "phone",
+              "value": "={{ $('Normalize').item.json.phone }}",
+              "type": "string"
+            },
+            {
+              "id": "e3c00001-0000-4000-8000-000000000004",
+              "name": "service",
+              "value": "={{ $('Normalize').item.json.service }}",
+              "type": "string"
+            },
+            {
+              "id": "e3c00001-0000-4000-8000-000000000005",
+              "name": "date",
+              "value": "={{ $('Normalize').item.json.date }}",
+              "type": "string"
+            },
+            {
+              "id": "e3c00001-0000-4000-8000-000000000006",
+              "name": "time",
+              "value": "={{ $('Normalize').item.json.time }}",
+              "type": "string"
+            },
+            {
+              "id": "e3c00001-0000-4000-8000-000000000007",
+              "name": "result",
+              "value": "BOOKED",
+              "type": "string"
+            },
+            {
+              "id": "e3c00001-0000-4000-8000-000000000008",
+              "name": "http_code",
+              "value": 200,
+              "type": "number"
+            },
+            {
+              "id": "e3c00001-0000-4000-8000-000000000009",
+              "name": "message",
+              "value": "התור נקבע בהצלחה",
+              "type": "string"
+            },
+            {
+              "id": "e3c00001-0000-4000-8000-000000000010",
+              "name": "airtable_record_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d3faf3d2-38f3-44d6-b361-3dfef93b2e41",
+      "name": "Booked",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1376,
+        272
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e3c00002-0000-4000-8000-000000000001",
+              "name": "timestamp",
+              "value": "={{ $now }}",
+              "type": "string"
+            },
+            {
+              "id": "e3c00002-0000-4000-8000-000000000002",
+              "name": "patient_name",
+              "value": "={{ $('Normalize').item.json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "e3c00002-0000-4000-8000-000000000003",
+              "name": "phone",
+              "value": "={{ $('Normalize').item.json.phone }}",
+              "type": "string"
+            },
+            {
+              "id": "e3c00002-0000-4000-8000-000000000004",
+              "name": "service",
+              "value": "={{ $('Normalize').item.json.service }}",
+              "type": "string"
+            },
+            {
+              "id": "e3c00002-0000-4000-8000-000000000005",
+              "name": "date",
+              "value": "={{ $('Normalize').item.json.date }}",
+              "type": "string"
+            },
+            {
+              "id": "e3c00002-0000-4000-8000-000000000006",
+              "name": "time",
+              "value": "={{ $('Normalize').item.json.time }}",
+              "type": "string"
+            },
+            {
+              "id": "e3c00002-0000-4000-8000-000000000007",
+              "name": "result",
+              "value": "SLOT_TAKEN",
+              "type": "string"
+            },
+            {
+              "id": "e3c00002-0000-4000-8000-000000000008",
+              "name": "http_code",
+              "value": 409,
+              "type": "number"
+            },
+            {
+              "id": "e3c00002-0000-4000-8000-000000000009",
+              "name": "message",
+              "value": "השעה המבוקשת תפוסה",
+              "type": "string"
+            },
+            {
+              "id": "e3c00002-0000-4000-8000-000000000010",
+              "name": "airtable_record_id",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7718a3c5-0827-4843-9617-1f10583a23b9",
+      "name": "Taken",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1376,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e3c00003-0000-4000-8000-000000000001",
+              "name": "timestamp",
+              "value": "={{ $now }}",
+              "type": "string"
+            },
+            {
+              "id": "e3c00003-0000-4000-8000-000000000002",
+              "name": "patient_name",
+              "value": "={{ $('Normalize').item.json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "e3c00003-0000-4000-8000-000000000003",
+              "name": "phone",
+              "value": "={{ $('Normalize').item.json.phone }}",
+              "type": "string"
+            },
+            {
+              "id": "e3c00003-0000-4000-8000-000000000004",
+              "name": "service",
+              "value": "={{ $('Normalize').item.json.service }}",
+              "type": "string"
+            },
+            {
+              "id": "e3c00003-0000-4000-8000-000000000005",
+              "name": "date",
+              "value": "={{ $('Normalize').item.json.date }}",
+              "type": "string"
+            },
+            {
+              "id": "e3c00003-0000-4000-8000-000000000006",
+              "name": "time",
+              "value": "={{ $('Normalize').item.json.time }}",
+              "type": "string"
+            },
+            {
+              "id": "e3c00003-0000-4000-8000-000000000007",
+              "name": "result",
+              "value": "INVALID",
+              "type": "string"
+            },
+            {
+              "id": "e3c00003-0000-4000-8000-000000000008",
+              "name": "http_code",
+              "value": 400,
+              "type": "number"
+            },
+            {
+              "id": "e3c00003-0000-4000-8000-000000000009",
+              "name": "message",
+              "value": "הבקשה אינה תקינה",
+              "type": "string"
+            },
+            {
+              "id": "e3c00003-0000-4000-8000-000000000010",
+              "name": "airtable_record_id",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8dd1fdec-a2a9-440c-8842-c9420b443fba",
+      "name": "Invalid",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1376,
+        704
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseCode": "={{ $json.http_code }}"
+        }
+      },
+      "id": "0f63cb1c-9493-4324-94c4-2a927bde94ef",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1616,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "id": "5d4a2c95-5f0d-4916-81b4-af09a1913059",
+      "name": "Log",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1840,
+        480
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize": {
+      "main": [
+        [
+          {
+            "node": "Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid?": {
+      "main": [
+        [
+          {
+            "node": "Search Slot",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Invalid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Slot": {
+      "main": [
+        [
+          {
+            "node": "Slot Free?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slot Free?": {
+      "main": [
+        [
+          {
+            "node": "Create Appt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Taken",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Appt": {
+      "main": [
+        [
+          {
+            "node": "Booked",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Booked": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Taken": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Invalid": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond": {
+      "main": [
+        [
+          {
+            "node": "Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {
+    "Webhook": [
+      {
+        "headers": {
+          "content-type": "application/json"
+        },
+        "params": {},
+        "query": {},
+        "body": {
+          "patient": {
+            "name": "מיכל אברהם",
+            "phone": "050-1234567",
+            "id_number": "039876541"
+          },
+          "service": "בדיקה תקופתית",
+          "date": "2026-11-03",
+          "time": "10:30"
+        },
+        "webhookUrl": "",
+        "executionMode": "test"
+      }
+    ]
+  },
+  "meta": {
+    "instanceId": "920214899d518092c84df17f740606176697a8912e390a24f11c1c8ee4d11dc3"
+  }
+}
